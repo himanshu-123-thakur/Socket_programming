@@ -1,0 +1,254 @@
+/*
+==================== FULL EXPLANATION OF CODE ====================
+
+1) HEADERS
+- sys/socket.h   → socket(), bind(), listen(), select()
+- sys/select.h   → select(), fd_set macros
+- netinet/in.h   → sockaddr_in (IP + port structure)
+- arpa/inet.h    → htons() (byte order conversion)
+- unistd.h       → close()
+
+------------------------------------------------------------
+
+2) GLOBALS
+
+struct sockaddr_in srv;
+→ Stores server IP + port info
+
+fd_set fr, fw, fe;
+→ fr = read set  (most important)
+→ fw = write set (unused here)
+→ fe = exception set
+
+NOTE:
+fd_set is internally a BITMASK (array of bits) --> A list of sockets you want to monitor
+Each bit represents a file descriptor (FD)
+
+------------------------------------------------------------
+
+3) SOCKET CREATION
+
+int nSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+→ Kernel creates a TCP socket
+→ Returns a file descriptor (example: 3)
+
+Meaning:
+AF_INET      → IPv4
+SOCK_STREAM  → TCP
+
+------------------------------------------------------------
+
+4) ADDRESS SETUP
+
+srv.sin_addr.s_addr = INADDR_ANY;
+→ Accept connections from ANY IP
+
+srv.sin_family = AF_INET;
+→ IPv4
+
+srv.sin_port = htons(nPort);
+→ Convert port (9900) to network byte order (BIG ENDIAN)
+
+------------------------------------------------------------
+
+5) CLEAR STRUCT
+
+memset(&srv, 0, sizeof(srv));
+→ Clears garbage memory
+
+------------------------------------------------------------
+
+6) BIND
+
+bind(nSocket, (sockaddr*)&srv, sizeof(srv));
+
+→ Kernel attaches socket to:
+   IP = 0.0.0.0
+   Port = 9900
+
+Now socket is tied to this address
+
+------------------------------------------------------------
+
+7) LISTEN
+
+listen(nSocket, 5);
+
+→ Kernel puts socket into LISTEN state
+→ Creates queue for incoming clients (size = 5)
+
+------------------------------------------------------------
+
+8) MAX FD
+
+nMaxFd = nSocket;
+
+→ select() needs highest FD value
+
+------------------------------------------------------------
+
+9) TIMEOUT
+
+tv.tv_sec = 1;
+
+→ select() waits max 1 second
+
+------------------------------------------------------------
+
+10) LOOP
+
+while(1)
+
+→ Infinite loop → server keeps running
+
+------------------------------------------------------------
+
+11) CLEAR FD SETS
+
+FD_ZERO(&fr);
+FD_ZERO(&fw);
+FD_ZERO(&fe);
+
+→ All bits set to 0
+→ No FDs monitored
+
+------------------------------------------------------------
+
+12) ADD SOCKET
+
+FD_SET(nSocket, &fr);
+FD_SET(nSocket, &fe);
+
+→ Internally:
+   bit[nSocket] = 1
+
+→ Meaning:
+   Monitor this socket for:
+   - READ events (incoming connection)
+   - EXCEPTION events
+
+------------------------------------------------------------
+
+13) BEFORE SELECT PRINT
+
+FD_ISSET(i, &fr)
+
+→ Checks:
+   is bit[i] == 1 ?
+
+→ Output:
+   Before select call : 3
+
+Meaning:
+You are monitoring FD 3 (server socket)
+
+------------------------------------------------------------
+
+14) SELECT CALL (CORE LOGIC)
+
+nRet = select(nMaxFd+1, &fr, &fw, &fe, &tv);
+
+WHAT SELECT DOES:
+
+1. Copy fd_set to kernel
+2. Check all FDs from 0 → nMaxFd
+3. If nothing ready → sleep (max 1 sec)
+4. If event OR timeout → wake up
+5. Modify fd_set:
+   keep ONLY ready FDs
+6. Return number of ready FDs
+
+------------------------------------------------------------
+
+15) WHAT IS "READY"?
+
+For server socket:
+
+READY = incoming connection is waiting
+
+------------------------------------------------------------
+
+16) AFTER SELECT PRINT
+
+FD_ISSET(i, &fr)
+
+Two cases:
+
+CASE 1: NO CLIENT
+→ select returns 0
+→ fd_set becomes empty
+
+Output:
+After Select count :
+
+------------------------------------------------------------
+
+CASE 2: CLIENT CONNECTS
+→ select returns 1
+→ fd_set still has nSocket
+
+Output:
+After Select count : 3
+
+------------------------------------------------------------
+
+17) MACROS INTERNAL MEANING
+
+FD_ZERO(set)
+→ set all bits = 0
+
+FD_SET(fd, set)
+→ set bit[fd] = 1
+
+FD_ISSET(fd, set)
+→ check if bit[fd] == 1
+
+FD_CLR(fd, set)
+→ set bit[fd] = 0
+
+------------------------------------------------------------
+
+18) IMPORTANT BEHAVIOR
+
+select() MODIFIES fd_set
+
+Before:
+{3}
+
+After:
+{}      (timeout)
+OR
+{3}     (event)
+
+------------------------------------------------------------
+
+19) OVERALL PROGRAM
+
+1. Create TCP server
+2. Bind to port 9900
+3. Listen for connections
+4. Every loop:
+   - monitor socket
+   - wait using select()
+   - print ready sockets
+
+------------------------------------------------------------
+
+20) IMPORTANT MISSING STEP
+
+You are NOT calling:
+
+accept()
+
+→ So you only DETECT connection
+→ You are NOT handling it
+
+------------------------------------------------------------
+
+FINAL ONE LINE:
+
+select() waits for events and filters fd_set to only those sockets that are ready.
+
+============================================================
+*/
