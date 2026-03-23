@@ -81,12 +81,14 @@ int main(){
     nRet=listen(nSocket,5);
 
 
-    //Receive connection from new client and process it
+
     nMaxFd=nSocket;
 
     struct timeval tv;
     tv.tv_sec =1 ;
     tv.tv_usec = 0;
+
+    //Receive connection from new client and process it
 
     while(1){
 
