@@ -53,6 +53,7 @@ int main(){
 */
 
     if(nSocket<0){
+        perror("Socket Perror ");
         cout<<"Socket Not opened"<<endl;
     }
     else{
