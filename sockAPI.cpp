@@ -25,17 +25,24 @@ int main(){
     //NAME → HINT → GET → USE → FREE
     //getaddrinfo takes hostname + hints and returns addrinfo list.
     //We extract sockaddr, convert to IP using inet_ntoa, and free using freeaddrinfo.
+//int getaddrinfo(const char *node,
+// const char *service,
+// const struct addrinfo *hints,
+// struct addrinfo **res);
+
+
 
     addrinfo hints{}, *res;
- 
+
     hints.ai_family = AF_INET;        // IPv4
     hints.ai_socktype = SOCK_STREAM;  // TCP
 
-    getaddrinfo(hostname, NULL, &hints, &res);
+    getaddrinfo(hostname,"https", &hints, &res);
 
     sockaddr_in *addr = (sockaddr_in*)res->ai_addr;
 
-    std::cout << inet_ntoa(addr->sin_addr) << std::endl;
+    std::cout << "IP: " << inet_ntoa(addr->sin_addr) << std::endl;
+    std::cout << "Port: " << ntohs(addr->sin_port) << std::endl;
 
     freeaddrinfo(res);
 
