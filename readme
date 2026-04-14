@@ -1,0 +1,55 @@
+TCP is connection-oriented and provides reliable communication using streams, 
+while UDP is connectionless and uses packets with no guarantee of delivery, 
+making it faster but less reliable.
+
+TCP FLOW :  Each client → separate FD
+            socket(AF_INET, SOCK_STREAM, 0);
+            bind()
+            listen()
+            accept()
+            send()
+            recv()
+
+Server:
+socket()
+  ↓
+bind()
+  ↓
+listen()
+  ↓
+accept()  → new client FD
+  ↓
+recv() / send()
+
+Client:
+socket()
+  ↓
+connect()
+  ↓
+send() / recv()
+
+
+
+UDP FLOW :  Single socket handles ALL clients
+            Client identified by IP + PORT
+
+            socket(AF_INET, SOCK_DGRAM, 0);
+            bind()
+            sendto()
+            recvfrom()
+
+Server:
+socket()
+  ↓
+bind()
+  ↓
+recvfrom()
+  ↓
+sendto()
+
+Client:
+socket()
+  ↓
+sendto()
+  ↓
+recvfrom()
